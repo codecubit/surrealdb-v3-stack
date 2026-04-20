@@ -1,0 +1,23 @@
+{
+  "name": "surrealdb-v3-stack",
+  "owner": {
+    "name": "Pascu"
+  },
+  "metadata": {
+    "description": "Private SurrealDB v3 plugin for Base platform",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "surrealdb-v3-stack",
+      "source": "./",
+      "description": "SurrealDB v3 + Base platform patterns — Schema Builder, jsonify/extractId, Mastra SCHEMALESS, EventBus/SurrealLiveAdapter, 46 gotchas, MCP server.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Pascu"
+      },
+      "category": "development",
+      "keywords": ["surrealdb", "schema-builder", "mastra", "eventbus"]
+    }
+  ]
+}
