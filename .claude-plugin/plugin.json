@@ -1,0 +1,10 @@
+{
+  "name": "surrealdb-v3-stack",
+  "version": "0.1.0",
+  "description": "SurrealDB v3 plugin for the Base platform — extends the public plugin with Schema Builder, jsonify/extractId, Mastra SCHEMALESS, EventBus/SurrealLiveAdapter, and project conventions.",
+  "author": {
+    "name": "Pascu"
+  },
+  "keywords": ["surrealdb", "surrealql", "base-platform", "schema-builder", "mastra", "eventbus"],
+  "license": "UNLICENSED"
+}

@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "surreal-cli": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp-server/src/index.js"],
+      "env": {
+        "SURREAL_BIN": "${SURREAL_BIN:-surreal}",
+        "SURREAL_URL": "${SURREAL_URL:-http://127.0.0.1:8000}",
+        "SURREAL_NS": "${SURREAL_NS:-}",
+        "SURREAL_DB": "${SURREAL_DB:-}",
+        "SURREAL_USER": "${SURREAL_USER:-}",
+        "SURREAL_PASS": "${SURREAL_PASS:-}"
+      }
+    }
+  }
+}
