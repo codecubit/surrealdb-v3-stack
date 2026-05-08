@@ -49,6 +49,20 @@ Walk the code and flag each issue with a severity and a fix. Use the checklist b
 - **`SELECT ... ORDER BY field` where field is not in projections** — may fail or produce unexpected results. Flag.
 - **Passing JS `null` to `option<T>` field in SCHEMAFULL** — NULL is rejected, NONE (undefined) is accepted. Flag if visible in SDK context.
 
+### Base-specific traps
+
+If the file lives inside the Base repo (path contains `web/`, `modules/`, `config/schema.ts`, `lib/eventbus/`, `services/worker/`) or if the user said "base" — also check:
+
+- **`DEFINE FIELD ... ON mod_*` inside `config/schema.ts` MIGRATIONS** — violates `check:schema-module-purity` gate. Module schema must live in `modules/<id>/manifest.ts` → `install()`. Flag as **blocker** with reference to v56 incident. See `references/base-gates.md`.
+- **Non-optional field added in MIGRATIONS without paired `UPDATE ... WHERE ... IS NONE`** — violates `check:schema-backfill` gate. Flag as **blocker** with reference to v64/v65 incident.
+- **`process.env.SURREAL_URL` (or `SURREAL_NS`/`SURREAL_DB`/`SURREAL_USER`/`SURREAL_PASS`) inside Base code** — Base uses the `SURREALDB_*` prefix. Connection will silently be unconfigured. Flag.
+- **`auth: { ... }` option inside `db.connect(...)`** — SDK v1 syntax, silently ignored in SDK v2 (Base uses `surrealdb@^2`). Connection succeeds unauthenticated; first protected query fails with `IAM error`. Flag as **blocker**. Fix: rename to `authentication: { ... }`.
+- **Inline `.replace(/^table:/, "")` for record ID extraction** — fragile to table names with hyphens, numbers, `mod_` prefixes. Flag and recommend `extractId(value)` from `@/lib/surreal`.
+- **`JSON.parse(JSON.stringify(record))` for Server→Client serialization** — only acceptable for settings-merge or JOIN-with-extra-fields cases. For plain row data, the project rule is `jsonify(record)` from `@/lib/surreal`. Flag with severity **warning** unless context fits an exception.
+- **`new Surreal()` outside `config/db.ts`** — Base centralizes the connection in `getDb()` from `@/config/db`. Module code creating its own client bypasses the cached singleton + ping pattern. Flag.
+- **Importing `jsonify` / `extractId` from `surrealdb` directly** — Base re-exports them from `@/lib/surreal` so import paths stay uniform. Flag and switch the import.
+- **A new module table without `mod_` prefix** — Base convention: tables owned by a module use `mod_<moduleid>_<purpose>`. Flag if the table appears in `modules/<id>/manifest.ts` install/migrate without the prefix.
+
 ### Permissions
 
 - Any `DEFINE TABLE` **without `PERMISSIONS`** clause when record access is in use → flag as "permissions default to `NONE` for select/update/delete unless you're an operator. Add explicit `PERMISSIONS FOR ... WHERE ...`."

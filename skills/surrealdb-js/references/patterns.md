@@ -34,6 +34,69 @@ export function getDb(): Promise<Surreal> {
 }
 ```
 
+## Base's cached-singleton pattern (with idle ping + reset)
+
+The Base codebase ([`config/db.ts`](../../../../../Dev/base/web/config/db.ts)) extends the basic cached-promise pattern with two production-driven additions: a periodic idle ping and a `resetDb()` for destructive operations. Use this exact pattern when working inside Base.
+
+```typescript
+// config/db.ts — Base profile
+import { Surreal } from "surrealdb";
+
+let db: Surreal | null = null;
+let lastSuccessAt = 0;
+const PING_INTERVAL_MS = 30_000;
+
+async function connect(): Promise<Surreal> {
+  const instance = new Surreal();
+  await instance.connect(process.env.SURREALDB_URL!, {
+    namespace: process.env.SURREALDB_NAMESPACE!,
+    database:  process.env.SURREALDB_DATABASE!,
+    authentication: {
+      username: process.env.SURREALDB_USER!,
+      password: process.env.SURREALDB_PASS!,
+    },
+    versionCheck: false,
+  });
+  lastSuccessAt = Date.now();
+  return instance;
+}
+
+export async function resetDb(): Promise<void> {
+  if (db) {
+    try { await db.close(); } catch { /* ignore */ }
+  }
+  db = null;
+}
+
+export async function getDb(): Promise<Surreal> {
+  if (db) {
+    // If the connection was used recently, skip the ping.
+    if (Date.now() - lastSuccessAt < PING_INTERVAL_MS) return db;
+
+    // Otherwise verify it's alive — proxies and load balancers
+    // sometimes silently drop idle WebSockets.
+    try {
+      await db.query("RETURN true");
+      lastSuccessAt = Date.now();
+      return db;
+    } catch {
+      try { await db.close(); } catch { /* ignore */ }
+      db = null;
+    }
+  }
+  db = await connect();
+  return db;
+}
+```
+
+Three things to notice:
+
+1. **`SURREALDB_*` env-var prefix.** Base uses `SURREALDB_URL` / `SURREALDB_NAMESPACE` / `SURREALDB_DATABASE` / `SURREALDB_USER` / `SURREALDB_PASS`. NOT `SURREAL_*`. Using the wrong prefix yields silent connection failures (the SDK throws "URL is undefined" because `process.env.SURREAL_URL!` is `undefined` in this repo).
+2. **`PING_INTERVAL_MS` defaults to 30s.** Below that, `getDb()` returns the cached client without I/O — good for hot loops. Above that, a single `RETURN true` round-trip confirms the socket is still alive before returning the client. NPM (Nginx Proxy Manager on CT 10.10.10.2) and Cloudflare both occasionally drop idle WebSockets without an `EngineDisconnected` notification — the ping is what catches that.
+3. **`resetDb()` is needed for destructive ops.** After `db restore`, snapshot apply, or any other operation that recreates the database, the cached connection is in a stale state. Call `resetDb()` to force a fresh connect.
+
+The ping pattern complements (does not replace) the `EngineDisconnected` retry layer below — they handle different failure modes (idle drop vs in-flight drop).
+
 ## Connection with auto-reconnect
 
 ```typescript

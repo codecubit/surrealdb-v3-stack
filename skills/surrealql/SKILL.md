@@ -9,7 +9,7 @@ SurrealQL is SurrealDB's query language — SQL-flavored but not SQL. This skill
 
 Target: **SurrealDB server v3.x**. Do not silently assume v1/v2 syntax. If the user's environment is v2 or earlier, flag it before writing (notably: v2 uses `DEFINE SCOPE`, v3 uses `DEFINE ACCESS`).
 
-## Core mental model — six things that are not like SQL
+## Core mental model — seven things that are not like SQL
 
 Internalize these before writing anything.
 
@@ -24,6 +24,8 @@ Internalize these before writing anything.
 5. **Strong typing is opt-in.** Tables default to `SCHEMALESS`. Use `SCHEMAFULL` + `DEFINE FIELD ... TYPE ...` for real type checking. Permissions attach to tables and fields and are enforced per row in the query engine.
 
 6. **Access control is first-class.** v3's `DEFINE ACCESS` replaces v1's `DEFINE SCOPE`. It handles record-based signup/signin, external JWT verification, and bearer tokens, all issuing server-signed JWTs. Don't roll your own auth on top.
+
+7. **Schema migrations require backfills for non-optional fields.** `DEFAULT <value>` only fires on `CREATE` — it does NOT populate existing rows. Adding a non-optional field without a paired `UPDATE <table> SET <field> = <value> WHERE <field> IS NONE` makes every read on legacy rows fail with a coerce error (because v3 SCHEMAFULL coerces every field on read, not only the queried ones). This caused two production outages (v64/v65, v70/v73). See `references/base-gates.md` for the gate that now blocks this class of bug pre-commit.
 
 ## When in doubt, read the right reference
 
@@ -41,6 +43,7 @@ Do not answer from memory for any substantive task. Read the matching file:
 | Common real-world queries (pagination, search, upsert, graphs)        | `references/cookbook.md`            |
 | Anything weird, failing, or version-sensitive                         | `references/gotchas.md`            |
 | **Schema Builder** (3-layer pipeline, CORE_SCHEMA, migrations, gates) | `references/schema-builder.md`     |
+| **Pre-commit gates** (catalog, manifests, schema-backfill, module-purity) | `references/base-gates.md`     |
 | **jsonify / extractId** (Server→Client serialization, RecordId)       | `references/serialization.md`      |
 | **Mastra tables** (SCHEMALESS exception, NULL vs NONE)                | `references/mastra.md`             |
 | **EventBus / SurrealLiveAdapter** (LIVE queries, channels, worker)    | `references/eventbus.md`           |

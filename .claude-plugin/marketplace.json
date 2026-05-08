@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "Private SurrealDB v3 plugin for Base platform",
-    "version": "0.2.1"
+    "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "surrealdb-v3-stack",
       "source": "./",
-      "description": "SurrealDB v3 + Base platform patterns — Schema Builder, jsonify/extractId, Mastra SCHEMALESS, EventBus/SurrealLiveAdapter, 46 gotchas, MCP server.",
-      "version": "0.2.1",
+      "description": "SurrealDB v3 + Base platform — Schema Builder, pre-commit gates, jsonify/extractId, Mastra SCHEMALESS, EventBus post-Phase-8, production-incident playbook.",
+      "version": "0.3.0",
       "author": {
         "name": "Pascu"
       },

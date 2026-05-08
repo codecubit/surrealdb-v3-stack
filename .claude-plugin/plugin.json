@@ -1,7 +1,7 @@
 {
   "name": "surrealdb-v3-stack",
-  "version": "0.2.1",
-  "description": "SurrealDB v3 plugin for the Base platform — extends the public plugin with Schema Builder, jsonify/extractId, Mastra SCHEMALESS, EventBus/SurrealLiveAdapter, and project conventions.",
+  "version": "0.3.0",
+  "description": "SurrealDB v3 plugin tailored to the Base platform — Schema Builder, pre-commit gates, jsonify/extractId, Mastra SCHEMALESS, EventBus/SurrealLiveAdapter, and real production-incident lessons.",
   "author": {
     "name": "Pascu",
     "url": "https://github.com/codecubit"

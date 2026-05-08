@@ -174,6 +174,34 @@ import { Surreal } from "surrealdb";     // CURRENT, v2
 
 v1 is a different package and codebase. Signatures and return shapes differ. If you see `surrealdb.js` imports, upgrade — v1 is not compatible with v3 server features like `DEFINE ACCESS`.
 
+### 13a. The default-export trap when porting v1 → v2
+
+```typescript
+import Surreal from "surrealdb";          // ❌ SDK v2 has NO default export
+import { Surreal } from "surrealdb";      // ✅ named export only
+```
+
+Pasting v1 examples or auto-import suggestions from older Stack Overflow answers reproduces this. The TypeScript error is `Module '"surrealdb"' has no default export.` — fix is to switch to a named import.
+
+### 13b. The `auth:` → `authentication:` rename
+
+```typescript
+// SDK v1
+await db.connect(url, {
+  namespace, database,
+  auth: { username, password },          // ❌ silently ignored in SDK v2
+});
+
+// SDK v2
+await db.connect(url, {
+  namespace, database,
+  authentication: { username, password }, // ✅
+  versionCheck: false,
+});
+```
+
+This one is **silent** — `auth:` is not a known option in v2, so the SDK ignores it and connects unauthenticated. The first query that requires auth then fails with `IAM error: Not enough permissions`, far from the actual cause. Always grep your codebase for `auth:` after upgrading.
+
 ## 14. Expecting `info()` to give server info
 
 ```typescript
@@ -208,3 +236,15 @@ HTTP is fine for serverless request/response. For live queries, use `ws://` or `
 ## 18. `EngineDisconnected` propagating into user code unexpectedly
 
 Any in-flight query can reject with `EngineDisconnected` if the socket drops. Wrap in a retry layer (see `ReliableDb` in `patterns.md`) or make the calling code tolerant.
+
+## 19. `$token` is a reserved word in SurrealQL v3
+
+```typescript
+// ❌ Throws: "$token" is a reserved variable
+await db.query("SELECT * FROM session WHERE token = $token", { token: jwt });
+
+// ✅ Use any other name
+await db.query("SELECT * FROM session WHERE token = $tkn", { tkn: jwt });
+```
+
+`$token` is reserved by the access-control system to refer to the current request's bearer token. Trying to bind it as a query parameter throws a syntax error from the parser. The same applies to `$auth`, `$session`, `$scope`, `$value`, `$before`, `$after`, `$this`, `$parent`. Use any other variable name (`$tkn`, `$jwt`, `$bearer`).
